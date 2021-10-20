@@ -1,0 +1,864 @@
+//invinq.cpp - a small program for inventory management
+// 10/10/2021
+// Trevor Haggerty, cisp 400
+
+//libraries and namespaces
+#include <iostream> // in out
+#include <ctime> // time library
+#include <iomanip> // formating library
+#include <cstdlib>  // general library
+#include <climits>  // allows use of variables limit numbers without
+#include <string>  // strings
+
+using namespace std;	// using the standard library
+
+//struct prototype
+struct IdObject{
+
+  int idNum;
+  string idStr;
+
+};
+
+//class prototypes
+// Specification B1 - Date class
+class Date{
+  public:
+    Date();
+    Date(int, int, int);
+  
+  private:
+    int Month;
+    int Day;
+    int Year;
+
+  public:
+    void SetDate(int, int, int);
+    string Display();
+    // Specification B2 - ComponentTest method in Date
+    void ClassTest();
+};
+
+//this is used to represent the records that occupy each element
+class Item{
+  private:
+    IdObject id; // 0<=x<100000
+    int quantity;
+    float whole; 
+    float retail; 
+    Date dateAdded; 
+
+  public:
+    //setters
+    void SetId(int a){id.idNum = a; ProcessId();};
+    void SetQuantity(int a){quantity = a;};
+    void SetWhole(float a){whole = a;};
+    void SetRetail(float a){retail = a;};
+    void SetDate(Date a){dateAdded = a;};
+    
+    //getters
+    int GetId(){int result =  id.idNum; return result;};
+    string GetIdStr(){string result =  id.idStr; return result;};
+    int GetQuantity(){return quantity;};
+    float GetWhole(){return whole;};
+    float GetRetail(){return retail;};
+
+    //complex mutators and functions
+    void ProcessId();
+    void ClassTest();
+    friend ostream &operator<<(ostream &out, Item item);
+    friend istream &operator>>(istream &in, Item &item);
+  };
+
+
+// Specification C2 - Dynamic Array
+class DynamicItemList {
+  public:
+    DynamicItemList(); 
+
+  private:
+    int listSize;
+    int listMaxSize;
+    Item *dynoList;
+    int *idList;
+
+  public:
+    //getters
+    int GetListSize(){return listSize;}
+    int GetListMaxSize(){return listMaxSize;}
+    Item GetElem(int);
+    int GetElemId(int);
+    
+    //setters
+    void setListSize(int newSize){listSize = newSize;}
+    void setListMaxSize(int newMaxSize){listMaxSize = newMaxSize;}
+
+    //complex member functions
+    //memory management
+    int Expand(int); 
+    int Contract(int);
+    
+    //custom prompting for ids
+    int UniqueId();
+
+    //Element mutators
+    int ModifyElem(int); 
+    int AppendElem(Item);
+    int DeleteElem(int);
+    int InsertElem(int, Item);
+    
+    ~DynamicItemList();
+};
+
+//Integer constants
+const int BAD_IN = -1;
+const int BAD_OUT = -2;
+const int INITIAL_SIZE = 0;
+
+//string modifiers
+const string GREENTEXT = "\033[32m";
+const string REDTEXT = "\033[31m";
+const string YELLOWTEXT = "\u001b[38:5:226m";
+const string EMPTYFORMAT = "\033[0m";
+
+
+//function prototypes
+void ProgramGreeting(Date);
+bool CoreLoop(DynamicItemList&);
+
+int Prompt(string, int, int);
+float Prompt(string, float, float);
+char PromptChar(string, string);
+string Prompt(string, bool);
+
+bool RollCall(string, char); //used to verify that a char is in a string
+bool RollCall(int*, int); //used to verify that an int is not in a list of ints
+
+void ProgramClosing();
+void UnitTest();
+
+
+int main() {
+  
+  Date now;
+  ProgramGreeting(now);
+  
+  Prompt("enter anything to continue...\n", false);
+  system("clear");
+  
+  // Specification A4 - UnitTest() method in main()
+  UnitTest();
+
+  Prompt("enter anything to continue...\n", false);
+
+  system("clear");
+
+  DynamicItemList inventory;
+
+  bool state = true;
+  while(state){
+    state = CoreLoop(inventory);
+    system("clear");
+  }
+
+  ProgramClosing();
+
+}
+
+
+
+//function implementation--------------------------------------
+void ProgramGreeting(Date now) {
+    string banner(50 ,'-');
+
+    cout << GREENTEXT << banner << EMPTYFORMAT << endl;
+    cout << "Welcome to the Simple Inventory Management Program" << endl;
+    cout << setw(50) << right << "coded by Trevor Haggerty" << endl;
+    cout << now.Display() << endl;
+    cout << GREENTEXT << banner << EMPTYFORMAT << endl;
+}
+
+bool CoreLoop(DynamicItemList& inventory){
+  
+  // Specification C1 - Alpha Menu
+
+  string stateOfSize;
+  if (inventory.GetListSize() == 0){
+    stateOfSize = REDTEXT;
+  }
+  else{
+    stateOfSize = GREENTEXT;
+  }
+
+  cout << "There are currently " << stateOfSize << inventory.GetListSize() << EMPTYFORMAT << " records logged in inventory\n";
+  string menu = EMPTYFORMAT + "\nmenu options:\n" ;
+  menu += GREENTEXT + "A" + EMPTYFORMAT + "dd (records data and appends it to end of the inventory list)\n";
+  menu += stateOfSize + "D" + EMPTYFORMAT + "elete (deletes the last element in the inventory)\n";
+  menu += stateOfSize + "E" + EMPTYFORMAT + "dit (choose the element and modify its contents)\n";
+  menu += stateOfSize + "S" + EMPTYFORMAT + "how (shows the contents of the inventory)\n";
+  menu += GREENTEXT + "Q" + EMPTYFORMAT + "uit (safely exit the program)\n";
+  menu += YELLOWTEXT + "Please enter a letter to choose the option (case doesn't matter).\n" + EMPTYFORMAT;
+
+  int result = true;
+  // Specification B3 - Menu Input Validation
+  char userIn = PromptChar(menu, "adeqsADEQS");
+
+  if (tolower(userIn) == 'a'){
+    system("clear");
+    Item recordedElem;
+    
+    recordedElem.SetId(inventory.UniqueId());
+    recordedElem.ProcessId();
+    
+    cin >> recordedElem;
+
+    cout << "\nyou entered:\n"<< recordedElem;
+    
+    inventory.AppendElem( recordedElem);
+  }
+  else if (tolower(userIn) == 'd'){
+    system("clear");
+    inventory.DeleteElem(inventory.GetListSize()-1);
+
+  }
+  else if (tolower(userIn) == 'e'){
+    system("clear");
+    if(inventory.GetListSize()>0){
+      int choice = Prompt("Which element would you like to modify? :",0, inventory.GetListSize()-1);
+      inventory.ModifyElem(choice);
+    }
+    else{
+      cout << REDTEXT << "There are no elements in the array to modify. Please add entries first.\n" << EMPTYFORMAT;
+    }
+  }
+  else if (tolower(userIn) == 's'){
+    system("clear");
+    if (inventory.GetListSize()){
+      for (int i = 0; i < inventory.GetListSize(); i++){
+        cout << inventory.GetElem(i);
+      }
+    }
+    else{
+      cout << REDTEXT << "There is no inventory to show...." << EMPTYFORMAT << endl;
+    }
+  
+  }
+  else if (tolower(userIn) == 'q'){
+    char newIn = PromptChar("are you sure y/n?  ","ynYN");
+    result = false;
+  }
+
+  if (result){
+    Prompt("enter anything to continue...\n", true);
+  }
+  return result;
+}
+
+
+
+
+int Prompt (string contents, int low, int high){
+
+    int result;
+    int userInput;
+    bool asking = true;
+    char errorChar;
+
+    while(asking){
+
+        cout << YELLOWTEXT << contents << EMPTYFORMAT;
+        cin >> userInput;
+
+        if (cin.fail()){
+            cin.clear();
+            cin >> errorChar;
+            cout << REDTEXT << "BAD INPUT!!!" << EMPTYFORMAT << endl;
+        }
+        else if ( userInput < low || userInput > high){
+            cout << REDTEXT << "BAD INPUT!!!" << EMPTYFORMAT << endl;
+        }
+        else{
+            result = userInput;
+            asking = false;
+        }
+
+    }
+    return result;
+}
+
+
+
+float Prompt(string contents, float low, float high){
+
+  float result;
+  float userInput;
+  bool asking = true;
+  char errorChar;
+
+  while(asking){
+    
+    cout << YELLOWTEXT << contents << EMPTYFORMAT;
+    cin >> userInput;
+
+    if (cin.fail()){
+      cin.clear();
+      cin >> errorChar;
+      cout << REDTEXT << "BAD INPUT!!!" << EMPTYFORMAT << endl;
+    }
+    else if ( userInput < low || userInput > high){
+      cout << REDTEXT << "BAD INPUT!!!" << EMPTYFORMAT << endl;
+    }
+    else{
+      result = userInput;
+      asking = false;
+    }
+
+  }
+  return result;
+}
+
+//basic slow searching func
+bool RollCall(string group, char individual){
+  
+  bool result = false;
+  
+  for(char elem: group){
+    if( elem == individual){
+      result = true;
+      break;
+    }
+  }
+  
+  return result;
+
+}
+
+char PromptChar(string contents, string accept){
+
+    int result;
+    char userInput;
+    bool asking = true;
+    char errorChar;
+
+    while(asking){
+
+        cout << YELLOWTEXT << contents << EMPTYFORMAT;
+        cin >> userInput;
+
+        if (cin.fail()){
+            cin.clear();
+            cin >> errorChar;
+            cout << REDTEXT << "BAD INPUT!!!" << EMPTYFORMAT << endl;
+        }
+        else if(!RollCall(accept, userInput)){
+            cout << REDTEXT << "BAD INPUT!!!" << EMPTYFORMAT << endl;
+        }
+        else{
+            result = userInput;
+            asking = false;
+        }
+
+    }
+    return result;
+}
+
+
+
+
+string Prompt(string contents, bool ignoreBuff){
+    string result = "";
+    if(ignoreBuff){
+      cin.ignore(100,'\n');
+    }
+    cout << YELLOWTEXT << contents << EMPTYFORMAT ;
+    getline(cin, result);
+    return result;
+}
+
+
+
+void ProgramClosing(){
+  
+  cout << "Thank you for using the program";
+
+}
+
+
+void UnitTest(){
+
+  Date testDate(9,9,9);
+  testDate.ClassTest();
+
+  Item testItem;
+  testItem.ClassTest();
+
+};
+
+
+
+//item implementation-----------------------------------
+
+// Specification A3 - Overload operator>>
+istream &operator>>(istream& in, Item &item){
+ 
+  item.SetQuantity(Prompt("How many of the item are there: ", 0, INT_MAX)); // 0>=x
+  item.SetWhole (Prompt("What is the wholesale value of the item: ", 0 , INT_MAX));
+  item.SetRetail (item.whole * 2);
+  
+  Date now;
+ 
+  if (tolower(PromptChar("Would you like the date auto filled to todays Date? Y/N :", "yYnN")) == 'n'){
+    now.SetDate(Prompt("Month: ",1,12),Prompt("Day: ",1,31),Prompt("Year: ",-9999,9999)); 
+  }
+  
+  item.SetDate(now);
+  
+  return in;
+};
+
+// Specification A2 - Overload operator<<
+ostream &operator<<(ostream& out, Item item){
+  
+  cout << setw(20) << left << "item Id: " << right << item.id.idStr << endl;
+  cout << setw(20) << left << "item quantity: " << right << item.quantity << endl;
+  cout << setw(20) << left << "item wholesale: " << right << "$" << std::setprecision(2) << fixed << item.whole << endl;
+  cout << setw(20) << left << "item retail: " << right << "$" << std::setprecision(2) << fixed << item.retail << endl;
+  cout << setw(20) << left << "date :" << right << item.dateAdded.Display() << endl << endl;
+  
+  return out;
+}
+
+void Item::ProcessId(){
+  
+  string result = to_string(id.idNum);
+  
+  while(result.length() < 5){
+    result = "0" + result;
+  }
+  
+  id.idStr = result;
+}
+
+void Item::ClassTest(){
+  cout << "\n" << YELLOWTEXT + "Testing items" + EMPTYFORMAT << endl;
+
+  cout <<  setw(30) << left << "id set";
+  SetId(99);
+  if (GetId() != 99){
+    cout << REDTEXT + "FAILURE!!!\n";
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n" ;
+  }
+  cout <<  "id.idNum -> expected 99 -> received : "<< GetId() << EMPTYFORMAT << endl;
+
+  cout << setw(30) << left << "id processed";
+  if (GetIdStr().compare("00099") != 0){
+    cout << REDTEXT + "FAILURE!!!\n";
+    cout << "bad set/get>" << GetIdStr() <<endl;
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n" ;
+  }
+  cout <<  "id.idStr -> expected '00099' -> received : "<< GetIdStr() << EMPTYFORMAT << endl;
+  cout <<setfill(' ');
+}
+
+
+//DynamicItemList implementation ----------------------------
+DynamicItemList::DynamicItemList(){
+  
+  listMaxSize = 0;
+  listSize = 0;
+
+  dynoList = nullptr;
+  dynoList = new Item[INITIAL_SIZE];
+  
+  idList = nullptr;
+  idList = new int[INITIAL_SIZE];
+
+}
+
+
+
+
+
+int DynamicItemList::UniqueId(){
+
+  bool found = false;
+  bool searching = true;
+  int choice;
+  int cursor;
+  while(searching){
+
+    found = false;
+    choice = Prompt("please enter an id (note: must be 5 digits. Any less will be concatonated with 0)\n", 0, 100000);
+    
+    for(int i = 0; i < listSize; i++){
+        cursor = *(idList + i);
+
+      if (cursor == choice){
+        found = true;
+      }
+    }
+    if(found){
+        char decision = PromptChar("Sorry that id is in use. Would you like to use it anyway? Y/N\n", "ynNY");
+        if (tolower(decision) == 'y'){
+          searching = false;
+        }
+    }
+    else{
+      searching = found;
+    }
+
+  }
+  return choice;
+}
+
+
+
+
+
+
+int DynamicItemList::AppendElem(Item addition){
+  int result = 0;
+  if (listSize + 1 >= listMaxSize){
+    Expand(1);
+  }
+  
+  *(dynoList + listSize) = addition;
+  *(idList + listSize) = addition.GetId();
+
+  listSize += 1;
+
+  return result;
+}
+
+
+
+
+
+
+// Specification C3 - Resize Array - add to end
+int DynamicItemList::Expand(int amount){
+
+  int result = 0;
+
+  Item *ogArray = nullptr;
+  ogArray = new Item[listMaxSize + amount];
+  
+  int *ogIdArray = nullptr;
+  ogIdArray = new int[listMaxSize + amount];
+
+
+  for (int q = 0; q < listMaxSize; q++){
+    *(ogArray + q) = *(dynoList + q);
+    *(ogIdArray + q) = *(idList + q);
+  }
+
+  dynoList = ogArray;
+  idList = ogIdArray;
+
+  listMaxSize += amount;
+
+  return result;
+}
+
+
+
+
+
+
+// Specification C4 - Resize Array - subtract from end
+int DynamicItemList::Contract(int amount){
+
+  int result = 0;
+
+  Item *ogArray = nullptr;
+  ogArray = new Item[listMaxSize - amount];
+
+  int *ogIdArray = nullptr;
+  ogIdArray = new int[listMaxSize - amount];
+
+  for (int q = 0; q < listMaxSize - amount; q++){
+    *(ogArray + q) = *(dynoList + q);
+    *(ogIdArray + q) = *(idList + q);
+  }
+
+  dynoList = ogArray;
+  idList = ogIdArray;
+  listMaxSize -= amount;
+  
+  return result;
+}
+
+
+
+
+
+
+
+int DynamicItemList::DeleteElem(int index){
+  int result = 0;
+  if (listSize != 0){
+
+    Item *ogArray = nullptr;
+    ogArray = new Item[listMaxSize];
+
+    int *ogIdArray = nullptr;
+    ogIdArray = new int[listMaxSize];
+
+    for( int q = 0 ; q < index ; q++){
+
+      *(ogArray + q) = *(dynoList + q);
+      *(ogIdArray + q) = *(idList + q);
+
+    }
+
+    for( int q = index + 1 ; q < listMaxSize ; q++){
+
+      *(ogArray + q) = *(dynoList + q);
+      *(ogIdArray + q) = *(idList + q);
+
+    }
+
+    dynoList = ogArray;
+    idList = ogIdArray;
+
+    listSize -= 1;
+
+    Contract(1);
+  }
+  else{
+    cout << REDTEXT + "We apologize but you cannot delete more.\n" + EMPTYFORMAT;
+    result = BAD_IN;
+  }
+
+  return result;
+}
+
+
+
+
+
+
+int DynamicItemList::InsertElem(int index, Item item){
+  int result = 0;
+
+  Item *ogArray = nullptr;
+  ogArray = new Item[listMaxSize];
+
+  int *ogIdArray = nullptr;
+  ogIdArray = new int[listMaxSize];
+
+  for( int q = 0 ; q < index ; q++){
+
+    *(ogArray + q) = *(dynoList + q);
+    *(ogIdArray + q) = *(idList + q);
+  }
+
+    *(ogArray + index) = item;
+    *(ogIdArray + index) = item.GetId();
+
+  for( int q = index ; q < listMaxSize ; q++){
+
+    *(ogArray + q) = *(dynoList + q + 1);
+    *(ogIdArray + q) = *(idList + q + 1);
+  }
+
+  dynoList = ogArray;
+  idList = ogIdArray;
+
+  return result;
+}
+
+
+
+
+
+// Specification A1 - Edit Inventory
+int DynamicItemList::ModifyElem(int index){
+
+  system("clear");
+
+  int result = 0;
+  int choice = 0;
+  bool working = true;
+  bool bigSweep = false;
+  char decision;
+
+  if (index >= 0 && index <= listSize - 1){
+    while(working){
+      
+      bigSweep = false;
+      
+      cout <<"this is the record you have chosen to modify: \n"<< *(dynoList + index) << endl;
+      
+      string menu = EMPTYFORMAT + "Editing menu:\n";
+      menu += GREENTEXT + "A" + EMPTYFORMAT + "ll of the feilds\n";
+      menu += GREENTEXT + "I" + EMPTYFORMAT + "dentification number\n";
+      menu += GREENTEXT + "Q" + EMPTYFORMAT + "uantity in stock\n";
+      menu += GREENTEXT + "W" + EMPTYFORMAT + "holesale value\n";
+      menu += GREENTEXT + "R" + EMPTYFORMAT + "etail value\n";
+      menu += GREENTEXT + "D" + EMPTYFORMAT + "ate modified\n";
+      menu += GREENTEXT + "E" + EMPTYFORMAT + "xit editing menu\n";
+      
+      char userIn = PromptChar(menu, "aAiIqQwWrRdDeE");
+
+      if (tolower(userIn) == 'a'){
+        
+        bigSweep = true;
+      }
+
+      if (tolower(userIn) == 'i' || bigSweep == true){
+        (dynoList + index)->SetId(UniqueId());
+        (dynoList + index)->ProcessId();
+
+        *(idList + index) =  (dynoList + index)->GetId();
+      }
+
+      if (tolower(userIn) == 'q' || bigSweep  == true){
+        (dynoList + index)->SetQuantity(Prompt("how many of this item are there?\n", 0, INT_MAX));
+      }
+      // Specification B4 - Inventory Entry Input Validation
+      if (tolower(userIn) == 'w' || bigSweep  == true){
+        
+        (dynoList + index)->SetWhole(Prompt("What is the new wholesale price?\n", 0, INT_MAX));
+        
+        decision = PromptChar("would you like to automatically adjust the retail to match this change? (this may lower the retail)  Y/N\n", "ynNY");
+          if (tolower(decision) == 'y'){
+          
+            (dynoList + index)->SetRetail((dynoList + index)->GetWhole()*2);
+          
+          }
+      }
+
+      if (tolower(userIn) == 'r' || bigSweep  == true || tolower(decision) == 'n'){
+        
+        (dynoList + index)->SetRetail(Prompt("What is the new retail price?\n", 0, INT_MAX));
+      
+      }
+
+      if (tolower(userIn) == 'd' || bigSweep  == true){
+        
+        Date date;
+        
+        if (tolower(PromptChar("Would you like the date auto filled to todays Date? Y/N :", "yYnN")) == 'n'){
+        
+          date.SetDate(Prompt("Month: ",1,12),Prompt("Day: ",1,31),Prompt("Year: ",-9999,9999)); 
+        
+        }
+        (dynoList + index)->SetDate(date);
+      }
+
+      if (tolower(userIn) == 'e'){
+        working = false;
+      }
+    }
+    
+  }
+  else{
+    result = BAD_IN;
+  }
+  return result;
+}
+
+Item DynamicItemList::GetElem(int index){
+
+  Item temp = *(dynoList + index);
+  return temp;
+
+}
+
+int DynamicItemList::GetElemId(int index){
+
+  int temp = *(idList + index);
+  return temp;
+
+}
+
+DynamicItemList::~DynamicItemList(){
+  delete [] dynoList;
+  delete [] idList;
+}
+
+//date implementation-------------------------------
+Date::Date(){
+
+  time_t currentTime = time(0);
+  tm *timeFormated = localtime(&currentTime);
+
+  Month = timeFormated->tm_mon + 1; // shift by one to correct number
+  Day = timeFormated->tm_mday;
+  Year = timeFormated->tm_year + 1900; // adding 1900 because of how digital dates work
+
+}
+
+Date::Date(int mm, int dd, int yy){
+  
+  SetDate(mm, dd, yy);
+
+}
+
+void Date::SetDate(int mm, int dd, int yy){
+
+  Month = mm;
+  Day = dd;
+  Year = yy;
+
+}
+
+string Date::Display(){
+
+  string result = to_string(Month) + " / ";
+  result += to_string(Day);
+  result += " / ";
+  result += to_string(Year);
+  
+  return result;
+}
+
+void Date::ClassTest(){
+
+  cout << YELLOWTEXT + "UNIT TESTING" + EMPTYFORMAT << endl << endl;
+
+  cout << YELLOWTEXT + "Testing date" + EMPTYFORMAT << endl;
+
+  int result = 0;
+  cout << setw(30) << setfill('-')<< left<<"testing Constructor";
+  if( Month != 9 || Day != 9 || Year != 9){
+    cout << REDTEXT + "FAILURE!!!\n";
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n";
+  }
+  cout << "Month -> expected 9 -> received : " << Month << endl;
+  cout << "Day -> expected 9 -> received : " << Day << endl;
+  cout << "Year -> expected 9 -> received : " << Year << EMPTYFORMAT << endl;
+
+   cout << setw(30) <<left<< "testing Setter";
+  SetDate(1,1,1);
+  if( Month != 1 || Day != 1 || Year != 1){
+    cout << REDTEXT + "FAILURE!!!\n";
+    
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n";
+  }
+  cout << "Month -> expected 1 -> received : " << Month << endl;
+  cout << "Day -> expected 1 -> received : " << Day << endl;
+  cout << "Year -> expected 1 -> received : " << Year << EMPTYFORMAT << endl;
+
+  cout << setw(30) << left << "testing Display";
+  string testOutput = Display();
+  if ( testOutput.compare("1 / 1 / 1") != 0){
+    cout << REDTEXT + "FAILURE!!!\n" ;
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n" ;
+  }
+  cout <<  "Date -> expected '1 / 1 / 1'";
+  cout << "-> received : " << testOutput << EMPTYFORMAT << endl;
+
+  cout << setfill(' ');
+}

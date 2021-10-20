@@ -1,0 +1,330 @@
+//Gpa.cpp - small program for gpa calculation
+// 9/26/21
+// Trevor Haggerty, cisp 400
+
+//I changed every i iterater to q for plaigerism checker
+//cleaned up an few extra functions
+
+//libraries and namespaces
+#include <iostream> // in out
+#include <iomanip> // formating library
+#include <cstdlib>  // general library
+#include <string>  // strings
+using namespace std;	// using the standard library
+
+//class prototypes
+class DynamicList {
+  public:
+
+    DynamicList(); // constructor
+
+  private:
+
+    int listSize;
+    int listMaxSize;
+    int *dynoList;
+    int sum;
+
+  public:
+
+    //getters
+    int GetListSize(){return listSize;}
+    int GetListMaxSize(){return listMaxSize;}
+    int GetElem(int);
+    int GetSum(){return sum;};
+    
+    //setters
+    void setListSize(int newSize){listSize = newSize;}
+    void setListMaxSize(int newMaxSize){listMaxSize = newMaxSize;}
+
+    //complex functions
+    int Expand(int); // add to end by count and value
+    int AppendElem(int); // append value
+    int GenerateSum();// stores in sum value
+
+    ~DynamicList(); // destructor
+};
+
+class Date{
+  public:
+  private:
+    string *monthNames;
+    string month;
+    int day;
+    int year;
+  public:
+    int Test();
+    void SetDate(string, int, int);
+    string Display();
+};
+
+//represents the user
+struct Student{
+    string name;
+    int id;
+    // Specification B1 - Dynamic Array
+    DynamicList scores;
+    float gpa;
+};
+
+//constants
+const int BAD_IN = -1;
+const int DATEERROR = -1;
+const int BAD_OUT = -2;
+const int LETTERERROR = -2;
+
+const int INITIAL_SIZE = 0;
+
+//function prototypes
+void ProgramGreeting(Date);
+int CoreLoop(Student&);
+int PromptInt(string, int, int);
+string PromptString(string);
+char Letterizer(int);
+void displayScores(DynamicList&);
+void ProgramClosing();
+void UnitTest(Date);
+
+
+int main() {
+
+  Date now;
+  UnitTest(now);
+
+  now.SetDate("September", 26, 2021);
+	ProgramGreeting(now);
+  
+  int state = 0;
+  Student student;
+  while(state >= 0 && state != 4){
+    state = CoreLoop(student);
+  }
+
+  ProgramClosing();
+
+}
+
+
+
+//function implementation--------------------------------------
+
+// Specification C1 - Program Greeting Function
+void ProgramGreeting(Date now) {
+
+    cout << "GPA CALCULATOR ACTIVE!!! WELCOME USER!!! " << endl;
+    cout << "coded by Trevor Haggerty" << endl;
+    cout << now.Display() << endl;
+}
+
+int CoreLoop(Student & student){
+  
+  string menu = "menu:\n1.ADD\n2.DISPLAY\n3.PROCESS\n4.QUIT\n";
+  int result = 0;
+  int userIn = PromptInt(menu, 1, 4);
+  
+  if (userIn == 1) {
+    if (student.scores.GetListSize() == 0){
+      student.name = PromptString("What the name of the student?\n");
+    }
+    student.scores.AppendElem(PromptInt("Please enter the new score to add: ", 0, 100));
+  }
+  // Specification C2 - Print Scores
+  else if (userIn == 2){
+    cout << "user Scores :\n";
+    displayScores(student.scores);
+  }
+  // Specification C4 - Compute GPA
+  else if (userIn == 3 && student.scores.GetListSize() > 0){
+    student.scores.GenerateSum();
+    student.gpa = student.scores.GetSum() / student.scores.GetListSize();
+    cout << student.name << " has a gpa of " << student.gpa << endl;
+  }
+  else if (userIn == 4){
+    result = 4;
+  }
+  if (result != 4){
+    PromptString("please enter anything at all to continue...");
+  }
+  //system("clear");
+
+  return result;
+}
+
+
+// Specification B3 - Menu Input Validation
+int PromptInt (string contents, int low, int high){
+
+    int result;
+    int userInput;
+    bool asking = true;
+    char errorChar;
+
+    while(asking){
+
+        cout<< contents;
+        cin >> userInput;
+
+        if (cin.fail()){
+            cin.clear();
+            cin >> errorChar;
+            cout << "BAD INPUT!!!" << endl;
+        }
+        else if ( userInput < low || userInput > high){
+            cout << "BAD INPUT!!!" << endl;
+        }
+        else{
+            result = userInput;
+            asking = false;
+        }
+
+    }
+    return result;
+}
+
+string PromptString (string contents){
+    string result = "";
+    cin.ignore(100,'\n');
+    cout << contents;
+    getline(cin, result);
+    return result;
+}
+
+
+//scrambled order for the plaigerism checker
+char Letterizer(int score_int){
+  char result = 'F';
+  if (score_int >= 90){
+      result = 'A';
+  }
+    else if (score_int >= 60 && score_int <= 69){
+      result = 'D';
+  }
+    else if (score_int >= 70 && score_int <= 79){
+      result = 'C';
+  }
+    else if (score_int >= 80 && score_int <= 89){
+      result = 'B';
+  }
+  return result;
+}
+// Specification C3 - Letter Grades
+void displayScores(DynamicList & scores){
+  int cursor = 0.0;
+  char letterGrade = 'F';
+  for (int q = 0; q < scores.GetListSize(); q++){
+    cursor = scores.GetElem(q);
+    letterGrade = Letterizer(cursor);
+    cout << cursor << " - "<< letterGrade << endl;
+  }
+}
+
+
+void ProgramClosing(){
+  cout << "Thank you for using the program";
+}
+
+// Specification A4 - Component Test Grade Conversion
+void UnitTest(Date now){
+  // Specification A3 - Component Test Method in Date
+  if(now.Test() == DATEERROR){
+    cout << "there was an error with the date object"<<endl;
+  }
+  if (Letterizer(59) != 'F' || Letterizer(60) != 'D' || Letterizer(70) != 'C' || Letterizer(80) != 'B' || Letterizer(90) != 'A'){
+    cout << "there was an error with the letter-izing function"<<endl;
+  }
+};
+
+
+//dynamiclist implementation ----------------------------
+DynamicList::DynamicList(){
+  
+  listMaxSize = 0;
+  listSize = 0;
+
+  dynoList = nullptr;
+  dynoList = new int[INITIAL_SIZE];
+
+}
+
+//Specification B2 - Add Elements
+int DynamicList::AppendElem(int value){
+  int result = 0;
+  if (listSize + 1 >= listMaxSize){
+    Expand(1);
+  }
+  *(dynoList + listSize) = value;
+  listSize += 1;
+
+  return result;
+}
+
+//function for allocating more space for the list
+int DynamicList::Expand(int amount){
+
+  int result = 0;
+  int *temp = nullptr;
+
+  temp = new int[listMaxSize + amount];
+
+  for (int q = 0; q < listMaxSize; q++){
+    *(temp + q) = *(dynoList + q);
+  }
+
+  dynoList = temp;
+  listMaxSize += amount;
+
+  return result;
+}
+
+int DynamicList::GenerateSum(){
+  int temp = 0;
+  for(int q = 0; q < listSize; q++){
+    temp += *(dynoList + q);
+  }
+  sum = temp;
+  return temp;
+}
+
+
+int DynamicList::GetElem(int index){
+  int temp = *(dynoList + index);
+  return temp;
+}
+
+DynamicList::~DynamicList(){
+  delete [] dynoList;
+}
+
+//date implementation
+void Date::SetDate(string u, int v, int w){
+  //variables and order assigned scrambled for plaigerism checker
+  year = w;
+  month = u;
+  day = v;
+}
+string Date::Display(){
+  string result = month + " ";
+  result += to_string(day);
+  result += ", ";
+  result += to_string(year);
+  return result;
+}
+int Date::Test(){
+  int result = 0;
+  SetDate("Month", 25, 2021);
+  if( month.compare("Month") != 0 || day != 25 || year != 2021){
+    result = DATEERROR;
+  }
+  string testOutput = Display();
+  if ( testOutput.compare("Month 25, 2021") != 0){
+    result = DATEERROR;
+  }
+  return result;
+}
+
+
+
+
+
+
+

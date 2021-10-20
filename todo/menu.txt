@@ -1,0 +1,574 @@
+//todo.cpp <-- small todo program
+//written by Trevor Haggerty
+// some date stuff here
+
+//libraries and namespaces-------------------------------------------
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <cstdlib>
+#include <ctime>
+#include <climits>
+
+using namespace std;
+
+//struct prototypes--------------------------------------------------
+struct element{
+  
+  string id;
+  string entry;
+  string date;
+
+};
+
+
+//class prototypes---------------------------------------------------
+
+//*****************Date class*******************
+class Date{
+  
+  public:
+    //constructors
+    Date();
+    Date(int, int, int);
+  
+  private:
+    //members
+    int Month;
+    int Day;
+    int Year;
+
+  public:
+    
+    //mutators
+    void SetDate(int, int, int);
+    void SetDateAuto();
+    
+    //accessors
+    string Display();
+    
+    //unit test
+    void ClassTest();
+
+};
+
+
+//*****************Database class*******************
+class Database{
+
+
+
+
+
+
+
+
+
+
+
+
+
+};
+
+
+//*****************Menu class*******************
+class Menu{
+
+  public:
+    //constructors
+    Menu();
+    Menu( int, string , int );
+
+  private:
+
+    int state;
+
+    string optionText;
+    
+    string buffStr;
+    int buffInt;
+
+  public:
+
+    //mutators
+    void SetState(int s){ state = s; };
+    void SetBuffStr(string b){ buffStr = b; };
+    void SetBuffInt(int b){ buffInt = b; };
+
+    //accessors
+    int GetState(){ return state; };
+    string GetBuffStr(){ return buffStr; };
+    int GetBuffInt(){ return buffInt; };
+    string DisplayOptions();
+    
+    //Prompts
+    void Prompt(string);
+    int Stall(bool = false);
+
+    //complex functions
+    void Process(int);
+
+    //unit test
+    void ClassTest();
+
+    //destructor
+    ~Menu();
+
+};
+
+
+
+
+
+
+
+
+//Unit testing constants--------------------------------------
+const int BAD_IN = -1;
+const int BAD_OUT = -2;
+
+const int TEST_INT_A = 912758364;
+const int TEST_INT_B = 175897743;
+const int TEST_INT_C = 638951181;
+
+const string TEST_STRING_A = "The word echelon sounds faster than it is.";
+const string TEST_STRING_B = "If I was an error message my name wou-";
+const string TEST_STRING_C = "912758364";
+const string TEST_STRING_D = "175897743";
+
+//Integer constants-------------------------------------------
+const int INITIAL_SIZE = 0;
+const int SCREEN_X = 50;
+
+//string modifiers----------------------------------------------
+const string GREENTEXT = "\033[32m";
+const string REDTEXT = "\033[31m";
+const string YELLOWTEXT = "\u001b[38:5:226m";
+const string EMPTYFORMAT = "\033[0m";
+const string BANNER(SCREEN_X ,'-');
+
+//function prototypes-------------------------------------------
+void ProgramGreeting(Date now);
+void UnitTest();
+int CoreLoop(Database&, Menu menu);
+void ProgramClosing();
+
+
+//---------------------MAIN----------------------------------
+int main(){
+  
+  Date now;
+  Menu menu;
+  
+  ProgramGreeting(now);
+
+  menu.Stall();
+  
+  UnitTest();
+
+  menu.Stall();
+
+  Database db;
+  CoreLoop(db, menu);
+
+  menu.Stall();
+
+  ProgramClosing();
+
+  return 0;
+}
+
+
+//function implementation---------------------------------------
+
+//*****************ProgramGreeting*******************
+void ProgramGreeting(Date now) {
+
+    cout << GREENTEXT << BANNER << EMPTYFORMAT << endl;
+    
+    cout << "Welcome to the TO DO list manager" << endl;
+    cout << setw(50) << right << "coded by Trevor Haggerty" << endl;
+    cout << now.Display()<< endl;
+    
+    cout << GREENTEXT << BANNER << EMPTYFORMAT << endl;
+
+};
+
+
+//*****************UnitTest*******************
+void UnitTest(){
+  
+  cout << YELLOWTEXT + "UNIT TESTING" + EMPTYFORMAT << endl << endl;
+  
+  Date testDate(TEST_INT_A, TEST_INT_B, TEST_INT_C);
+  testDate.ClassTest();
+
+  Menu testMenu(TEST_INT_A, TEST_STRING_B, TEST_INT_B);
+  testMenu.ClassTest();
+
+};
+
+//*****************CoreLoop*******************
+int CoreLoop(Database& db, Menu menu){
+
+  while (menu.GetState() >= 0){
+    menu.DisplayOptions();
+    menu.Prompt("\n");
+
+  cout << "you entered " << menu.GetBuffStr();
+
+  }
+
+  return 0;
+};
+
+
+//*****************ProgramClosing*******************
+void ProgramClosing(){
+  cout << GREENTEXT << BANNER << EMPTYFORMAT << endl;
+    
+  cout << "Thank you for using list manager" << endl;
+  cout << setw(50) << right << "coded by Trevor Haggerty" << endl;
+ 
+  cout << GREENTEXT << BANNER << EMPTYFORMAT << endl;
+
+};
+
+
+
+//*********************Date implementation************************
+//constructor--------------------------------------------
+Date::Date(){
+  SetDateAuto();
+  
+}
+
+
+//constructor overload---------------------------------------
+Date::Date( int mm, int dd, int yy ){
+  
+  SetDate(mm, dd, yy);
+
+}
+
+
+//Main setter--------------------------------------------
+void Date::SetDate( int mm, int dd, int yy ){
+  
+  Month = mm;
+  Day = dd;
+  Year = yy;
+
+}
+
+
+//automatic setter--------------------------------------------
+void Date::SetDateAuto(){
+  
+  time_t currentTime = time(0);
+  tm *timeFormated = localtime(&currentTime);
+
+  Month = timeFormated->tm_mon + 1; // shift by one to correct number
+  Day = timeFormated->tm_mday;
+  Year = timeFormated->tm_year + 1900; // adding 1900 because of how digital dates work
+
+};
+
+
+//Main getter function--------------------------------------------
+string Date::Display(){
+
+  string result = to_string(Month) + " / ";
+  result += to_string(Day);
+  result += " / ";
+  result += to_string(Year);
+  
+  return result;
+
+}
+
+
+//Unit testing----------------------------------------------------
+void Date::ClassTest(){
+  cout << YELLOWTEXT + "Testing date" + EMPTYFORMAT << endl;
+
+  int result = 0;
+  cout << setw(SCREEN_X) << setfill('-') << left << "testing Constructor";
+  if( Month != TEST_INT_A || Day != TEST_INT_B || Year != TEST_INT_C){
+    cout << REDTEXT + "FAILURE!!!\n";
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n";
+  }
+  cout << "Month -> expected " << TEST_INT_A << " -> received : " << Month << endl;
+  cout << "Day -> expected " << TEST_INT_B << " -> received : " << Day << endl;
+  cout << "Year -> expected " << TEST_INT_C <<" -> received : " << Year << EMPTYFORMAT << endl;
+  
+  //----------------------------------------
+
+  time_t currentTime = time(0);
+  tm *timeFormated = localtime(&currentTime);
+
+   cout << setw(SCREEN_X) <<left<< "testing Automatic Setter";
+  SetDateAuto();
+  if( Month != (timeFormated->tm_mon + 1) || Day != timeFormated->tm_mday || Year != (timeFormated->tm_year + 1900)){
+    cout << REDTEXT + "FAILURE!!!\n";
+    
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n";
+  }
+  cout << "Month -> expected " << (timeFormated->tm_mon + 1) << " -> received : " << Month << endl;
+  cout << "Day -> expected " << timeFormated->tm_mday << " -> received : " << Day << endl;
+  cout << "Year -> expected " << (timeFormated->tm_year + 1900) << " -> received : " << Year << EMPTYFORMAT << endl;
+
+  //----------------------------------------
+   cout << setw(SCREEN_X) <<left<< "testing Manual Setter";
+  SetDate(TEST_INT_C,TEST_INT_A,TEST_INT_B);
+  if( Month != TEST_INT_C || Day != TEST_INT_A || Year != TEST_INT_B){
+    cout << REDTEXT + "FAILURE!!!\n";
+    
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n";
+  }
+  cout << "Month -> expected " << TEST_INT_C << " -> received : " << Month << endl;
+  cout << "Day -> expected " << TEST_INT_A << " -> received : " << Day << endl;
+  cout << "Year -> expected " << TEST_INT_B << " -> received : " << Year << EMPTYFORMAT << endl;
+
+  //----------------------------------------
+  cout << setw(SCREEN_X) << left << "testing Display";
+  string testOutput = Display();
+
+  string testString = to_string(TEST_INT_C);
+  testString += " / " + to_string(TEST_INT_A);
+  testString += " / " + to_string(TEST_INT_B);
+
+  if ( testOutput.compare(testString) != 0){
+    cout << REDTEXT + "FAILURE!!!\n" ;
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n" ;
+  }
+  cout <<  "Date -> expected " + testString;
+  cout << "-> received : " << testOutput << EMPTYFORMAT << endl;
+  cout << setfill(' ');
+}
+
+
+
+
+
+//*********************Menu implementation************************
+//constructor---------------------------------
+Menu::Menu(){
+
+  state = 0;
+  buffStr = "";
+  buffInt = 0;
+
+
+}
+
+
+//constructor overloading
+Menu::Menu(int s , string b = "", int i = 0){
+
+  state = s;
+  buffStr = b;
+  buffInt = i;
+
+
+
+
+
+}
+//Main display function-----------------------------------
+string Menu::DisplayOptions(){
+  cout << optionText;
+  return optionText;
+}
+
+//Main prompting function-----------------------------------
+void Menu::Prompt(string content){
+
+  cout << content;
+  getline(cin, buffStr);
+
+}
+
+//stalling for input function-----------------------------------
+int Menu::Stall(bool b){
+
+  string s;
+  
+  cout << "Please enter anything to continue\n";
+  getline(cin, s);
+  
+  if ( !b ){
+    system("clear");
+  }
+  
+  return 0;
+}
+
+
+//Member processing function--------------------------------------
+void Menu::Process(int mode){
+  
+  switch(mode){
+
+    case 0:
+      buffStr = to_string(buffInt);
+      break;
+
+    case 1:
+      try{
+        buffInt = stoi(buffStr);
+      }
+      catch(int error){
+        cout << "There was an error here and we gotta find out about it." << endl;
+      }
+
+      break;
+  }
+
+};
+//--------------------------------------------------------
+
+
+
+
+
+
+//Unit test------------------------------------------ 
+void Menu::ClassTest(){
+  
+
+  cout << YELLOWTEXT + "Testing Menu" + EMPTYFORMAT << endl;
+
+  int result = 0;
+  //----------------------------------------
+  
+  cout << setw(SCREEN_X) << setfill('-') << left << "testing Constructor" ;
+  
+  if( state != TEST_INT_A || buffStr != TEST_STRING_B || buffInt != TEST_INT_B){
+    cout << REDTEXT + "FAILURE!!!\n";
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n";
+  }
+  
+  cout << "state -> expected " << TEST_INT_A << " -> received : " << state << endl;
+  cout << "buffer string -> expected " << TEST_STRING_B << " -> received : " << buffStr << endl;
+  cout << "buffer integer -> expected " << TEST_INT_B << " -> received : " << buffInt << endl;
+  cout << EMPTYFORMAT;
+
+  //----------------------------------------
+  cout << setw(SCREEN_X) << setfill('-') << left << "testing setters" ;
+  
+  SetState(TEST_INT_C);
+  SetBuffStr(TEST_STRING_A);
+  SetBuffInt(TEST_INT_A);
+  
+  if( state != TEST_INT_C || buffStr != TEST_STRING_A || buffInt != TEST_INT_A){
+    cout << REDTEXT + "FAILURE!!!\n";
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n";
+  }
+  
+  cout << "state -> expected " << TEST_INT_C << " -> received : " << state << endl;
+  cout << "buffer string -> expected " << TEST_STRING_A << " -> received : " << buffStr << endl;
+  cout << "buffer integer -> expected " << TEST_INT_A << " -> received : " << buffInt << endl;
+  cout << EMPTYFORMAT;
+
+  //---------------------------------------------
+  
+  cout << setw(SCREEN_X) << setfill('-') << left << "testing Stalling function\n" ;
+  int testValue = Stall(true);
+
+  if(testValue){
+    cout << setw(SCREEN_X) << setfill('-') << left << "tested Stalling function" ;
+    cout << REDTEXT + "FAILURE!!!\n";
+  }
+  else{
+    cout << setw(SCREEN_X) << setfill('-') << left << "tested Stalling function" ;
+    cout << GREENTEXT + "SUCCESS!!!\n";
+  }
+  
+  cout << "input-> expected " << testValue << " -> received : " << testValue<< endl;
+  cout << EMPTYFORMAT;
+
+  //----------------------------------------------
+  cout << setw(SCREEN_X) << setfill('*') << right <<  "testing Processing function\n" ;
+  cout << setw(SCREEN_X) << setfill('-') << left << "testing Mode 0" ;
+
+  SetBuffStr(TEST_STRING_A);
+  SetBuffInt(TEST_INT_A);
+
+  Process(0);
+
+  if(GetBuffStr().compare(TEST_STRING_C) != 0){
+     cout << REDTEXT + "FAILURE!!!\n";
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n";
+  }
+  
+  cout << " SetBuffStr-> expected " << TEST_STRING_C << " -> received : " << GetBuffStr()<< endl;
+  cout << EMPTYFORMAT;
+
+  //----------------------------------------------
+  cout << setw(SCREEN_X) << setfill('-') << left << "testing Mode 1" ;
+
+  SetBuffStr(TEST_STRING_D);
+  SetBuffInt(TEST_INT_A);
+
+  Process(1);
+
+  if(GetBuffInt() != TEST_INT_B){
+     cout << REDTEXT + "FAILURE!!!\n";
+  }
+  else{
+    cout << GREENTEXT + "SUCCESS!!!\n";
+  }
+  
+  cout << " SetBuffInt-> expected " << TEST_INT_B << " -> received : " << GetBuffInt()<< endl;
+  cout << EMPTYFORMAT;
+
+  cout << setfill(' ');
+
+  //----------------------------------------------
+
+
+
+
+
+
+
+
+
+
+}
+//destructor-----------------------------------------
+Menu::~Menu(){
+
+  delete [] optionText;
+  delete [] optionChar;
+
+}
+
+
+
+
+
+
+
+
+//********************* -classnamehere-  implementation************************
+//constructor---------------------------------
+//setter---------------------------------------------
+//getter---------------------------------------------
+//complex functions----------------------------------
+//Unit test------------------------------------------ 
