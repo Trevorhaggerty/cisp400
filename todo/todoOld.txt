@@ -49,7 +49,7 @@ class Date{
 class Element{
   public:
     //constructor
-    Element(); 
+    Element(); //ut
     Element(string);
 
   private: 
@@ -97,7 +97,6 @@ class Menu{
 
     int state;
     string* optionText;
-    string* optionFilter;
     string bufferStr;
     int bufferInt;
     char bufferChar;
@@ -123,7 +122,7 @@ class Menu{
     string DisplayOptions();
     
     //Prompts
-    void Prompt();
+    void Prompt(string= "", string = "");
     int Stall(bool = false);
 
     //complex functions//ut
@@ -171,7 +170,7 @@ class Database {
     void SetDate(int m,int d,int y){ date.SetDate(m,d,y); };
     void SetDate(){ date.SetDateAuto(); };
 
-    int Process();
+    int Process(int, int, string, int, char);
 
     //memory management
     int Expand(int); 
@@ -202,21 +201,20 @@ class Database {
 //Testing constants--------------------------------------
 const int BAD_IN = -1;
 const int BAD_OUT = -2;
-const string OVERBOUNDS = "OVERBOUNDS";
 
 const int TEST_INT_A = 912758364;
 const int TEST_INT_B = 175897743;
 const int TEST_INT_C = 638951181;
 
-const string TEST_STRING_A = "The word echelon sounds faster than it is.  ";
+const string TEST_STRING_A = "The word echelon sounds faster than it is.";
 const string TEST_STRING_B = "If I was an error message my name wou-";
 const string TEST_STRING_C = "912758364";
 const string TEST_STRING_D = "175897743";
 
 //Integer and State constants-------------------------------------------
+const int INITIAL = 0;
 const int SCREEN_X = 70;
 
-const int INITIAL = 0;
 const int MODIFYING = 1;
 const int DELETING = 2;
 const int DISPLAYING = 3;
@@ -242,11 +240,7 @@ int CoreLoop( Database&, Menu&);
 
 string Tokenizer(string, int, string filter = " " );//ut
 string RandStr(int);//ut
-
-int RollCall( string , string filter = " " );//ut
-int WordCount( string , string filter = " " );
-string StringTrimmer(string, string filter = " ");
-
+int RollCall( string , string );//ut
 bool NumberCheck( string );//ut
 bool AlphaCheck( string );//ut
 
@@ -304,86 +298,17 @@ void ProgramGreeting(Date now) {
 int RollCall(string population, string filter){
   
   int result = 0;
-  if(population.length() > 0){
-    
-    for(int i = 0; i < population.length(); i++){
-      for(int j = 0; j < filter.length(); j++){
-        
-        if((char)population[i] == (char)filter[j]){
-         result++;
-        }
-      
+
+  for(int i = 0; i < population.length(); i++){
+    for(int j = 0; j < filter.length(); j++){
+      if((char)population[i] == (char)filter[j]){
+        result++;
       }
     }
-
-  }
-  else{
-    result = -1;
   }
 
   return result;
 };
-
-
-//*****************StringTrimmer******************
-string StringTrimmer(string text, string filter){
-  string result = text;
-
-  //remove the whitespace at the ends
-  for(int i = 0; i < filter.length(); i++){
-      
-    while(text[0] == filter[i]){
-      result = result.substr(1,text.length() - 1);
-    }
-    while(text[text.length()] == filter[i]){
-      result = result.substr(0,text.length());
-    }
-  }
-
-  return result;
-}
-
-
-
-//*****************WordCount***********************
-
-int WordCount(string text, string filter){
-
-  text = StringTrimmer(text,filter);
-  int result = 0;
-
-  bool counting = true;
-  int iterator = 0;
-  string cursor;
-
-  while (counting){
-
-    cursor = Tokenizer(text,0);
-
-    if(cursor.compare(OVERBOUNDS) != 0 &&
-      cursor.compare(to_string(BAD_IN)) != 0 &&
-      cursor.compare(to_string(BAD_OUT)) != 0 &&
-      cursor.length() < text.length() - 1 ){
-        cout << cursor << endl;
-        text = text.substr(cursor.length(),text.length() - 1);
-        result++;
-    }
-    else{
-      counting = false;
-    }
-
-    if (text.length() == 0){
-      counting = false;
-    };
-
-  }
-
-
-  
-  return result;
-
-}
-
 //*****************NumberCheck****************
 bool NumberCheck(string inputString){
   
@@ -422,16 +347,12 @@ bool AlphaCheck(string inputString){
 
 //*****************Tokenizer*******************
 string Tokenizer(string text, int index, string filter){
-  cout << text.length();
-  text = StringTrimmer(text,filter);
-  cout << text.length();
   
   string result = "";
   string cursor = "";
-
   int tempInt = 0;
 
-  if(text.length() > 0 && index <= RollCall(text,filter) && index > 0){
+  if(text.length() > 0 && index < text.length() && index >= 0){
     int count = 0;
     
     for(int i = 0; i < text.length(); i++){
@@ -449,10 +370,7 @@ string Tokenizer(string text, int index, string filter){
 
   }
   else if(index >= text.length()){
-    result = OVERBOUNDS;
-  }
-  else if(result.empty()){
-    result = to_string(BAD_IN);
+    return "OVERBOUNDS";
   }
   else{
     result = to_string(BAD_IN);
@@ -500,10 +418,16 @@ int CoreLoop(Database& db, Menu& menu){
   bool running = true;
   while (running){
     
-    menu.Prompt();
+    if (menu.GetState() == MODIFYING){
+      cout << db.GetElem(db.IdToIndex(menu.GetCursor()));
+    }
+    menu.DisplayOptions();
+    menu.Prompt("User :" , "");
+    
     menu.Process();
     
-    //db.Process();
+    menu.DisplayBuffers();
+    menu.SetState(db.Process(menu.GetState(),menu.GetCursor(),menu.GetBufferStr(),menu.GetBufferInt(),menu.GetBufferChar()));
 
     running = (menu.GetState() != QUITING);
     menu.Stall();
@@ -541,9 +465,6 @@ void UnitTest(){
 
   testString = RandStr(5);
   Analyze(to_string(5),to_string(testString.length()),"RandStr");
-
-  testInt = WordCount(TEST_STRING_A);
-  Analyze("8", to_string(testInt),"WordCount");
   
   cout << YELLOWTEXT + "UNIT TESTING" + EMPTYFORMAT << endl << endl;
   cout << endl << YELLOWTEXT + "TESTING OBJECTS" + EMPTYFORMAT << endl << endl;
@@ -670,9 +591,6 @@ Menu::Menu(){
 
   optionText = nullptr;
   optionText = new string[10];
-
-  optionFilter = nullptr;
-  optionFilter = new string[10];
   
   string tempStr = BANNER + "\n";
   tempStr += "MAIN MENU\n";
@@ -684,31 +602,16 @@ Menu::Menu(){
   tempStr += "quit     <--- to quit the program\n";
 
 
-  *(optionText + INITIAL) = tempStr;
+  *(optionText) = tempStr;
 
-  tempStr = "+-m?q";
-
-  *(optionFilter + INITIAL) = tempStr;
-
-  tempStr = "";
+  string tempStr2 = "";
   tempStr += "__MODIFICATION HELP__\nt 'text'  <--- to change entry text\n";
   tempStr += "p 'int' <--- to change priority level\n";
   tempStr += "c       <--- to toggle completion\n";
   tempStr += "q       <--- to exit the modification menu\n";
 
-  *(optionText + MODIFYING) = tempStr;
+  *(optionText + MODIFYING) = tempStr2;
 
-  tempStr = "tpc? quit";
-
-  *(optionFilter + MODIFYING) = tempStr;
-
-  tempStr = "Would you like to save your changes before exiting?";
-
-  *(optionText + QUITING) = tempStr;
-
-  tempStr = "yn yes no";
-
-  *(optionFilter + QUITING) = tempStr;
 
 }
 
@@ -734,28 +637,49 @@ string Menu::DisplayOptions(){
   return result;
 }
 
-
 //Main prompting function-----------------------------------
-void Menu::Prompt(){
+void Menu::Prompt(string contents, string filter){
    
   bool asking = true;
 
-
-
   while(asking){
 
-    //prompt the user
-    cout << *(optionText + state) << YELLOWTEXT << "user: "<<EMPTYFORMAT;
+    cout << YELLOWTEXT << contents << EMPTYFORMAT;
     
-    bufferInt = INITIAL;
+    bufferInt = 0;
     getline(cin, bufferStr);
-    
 
-
-    {
-
+    if(NumberCheck(bufferStr)){   
+      if(bufferStr.length() < 8){ 
+        
+        bufferInt=(stoi(bufferStr));
+        asking = false;
+      
+      }  
     }
 
+    string token = Tokenizer(bufferStr,1);
+    
+    if(NumberCheck(token)){
+      
+      bufferInt = stoi(token);
+    
+    }
+
+    token = Tokenizer(bufferStr,RollCall(bufferStr," "));
+    
+    if(NumberCheck(token)){
+      
+      bufferInt = stoi(token);
+      bufferStr = bufferStr.substr(0,bufferStr.length()-token.length());
+    
+    }
+
+    if(bufferStr.length() > 0){
+        bufferChar = bufferStr[0];
+        asking = false;
+    }
+  
   }
 }
 
@@ -777,6 +701,52 @@ int Menu::Stall(bool b){
 
 //Member processing function--------------------------------------
 void Menu::Process(){
+
+  if(state == INITIAL){
+
+    if(bufferChar == '+'){
+      
+      state = RECORDING;
+      bufferStr = bufferStr.substr(1,bufferStr.length());
+     
+      while(bufferStr[0] == ' '){
+       
+        bufferStr = bufferStr.substr(1,bufferStr.length());
+     
+      }
+    }
+    else if(bufferChar == 'm' && bufferInt >= 0){
+      
+      cursor = bufferInt;
+      state = MODIFYING;
+
+    }
+    else if(bufferChar == '-' && bufferInt >= 0){
+      
+      state = DELETING;
+
+    }
+    else if(bufferChar == '?'){
+
+      bufferStr = "";
+      state = DISPLAYING;
+
+    }
+    else if(bufferStr.compare("quit") == 0 ){
+
+      bufferStr = "";
+      state = QUITING;
+
+    }
+    
+  }
+  else if(state == MODIFYING){
+
+
+
+  }
+
+ 
 
 };
 
@@ -1078,11 +1048,94 @@ int Database::ReplaceElem(int index, Element element){
   return 0;
 }
  
-int Database::Process(){
-  int result = 0;
+int Database::Process(int state, int cursor, string bufferStr, int bufferInt, char bufferChar){
+  int result = state;
 
+  if( state == RECORDING){
+      Element record;
+
+      string entry = bufferStr;
+      
+      entry >> record;
+      record.SetId(GenerateUniqueId());
+      record.SetPriority(bufferInt);
+
+      cout << GREENTEXT << "To do added:"  << endl;
+      cout <<  record << EMPTYFORMAT << endl;
+
+      AppendElem(record);
+       result = INITIAL;
+
+  }
+  else if(state == DELETING){
+
+    if(IdToIndex(bufferInt) >= 0){
+      DeleteElem(IdToIndex(bufferInt));
+    }
+    else if(bufferInt < listSize && bufferInt >= 0){
+      DeleteElem(bufferInt);
+    }
+
+    result = INITIAL;
+
+  }
+  else if(state == DISPLAYING){
+      if (listSize>0){
+      Display();
+      }
+      result = INITIAL;
+  }
+  else if(state == MODIFYING){
+    
+    if (listSize > 0 ){
+      cout <<"1";
+        
+          cout <<"2";
+          if( bufferChar != 'm'){
+            cout <<"3";
+            if( bufferChar == 't' && bufferStr.length() > 1){
+
+              Element tempElement = GetElem(IdToIndex(cursor));
+
+              bufferStr = bufferStr.substr(1,bufferStr.length());
+              while(bufferStr[0] == ' '){
+                bufferStr = bufferStr.substr(1,bufferStr.length());
+              }
+              bufferStr >> tempElement;
+
+              ReplaceElem(IdToIndex(cursor), tempElement);
+
+
+            }else if( bufferChar == 'c' ){
+
+              Element tempElement = GetElem(IdToIndex(cursor));
+              tempElement.SetCompleted(!tempElement.GetCompleted());
+              ReplaceElem(IdToIndex(cursor), tempElement);
+
+            }
+            else if( bufferChar == 'p'){
+
+              Element tempElement = GetElem(IdToIndex(cursor));
+              tempElement.SetPriority(bufferInt);
+              ReplaceElem(IdToIndex(cursor), tempElement);
+
+
+            }
+            else if( bufferChar == 'q'){
+              result = INITIAL;
+            }
+          }
+        
+      }
+      else{
+        cout << REDTEXT << "Bad Input." << EMPTYFORMAT;
+        result = INITIAL;
+      }
+  }
+  
 
   return result;
+
 }
 
 //----------unit testing---------------------
